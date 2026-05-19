@@ -62,8 +62,8 @@ const planoAulaSchema = z.object({
     })).optional()
 });
 
-app.get('/', async (req, res) => {
-    res.json({ rodando: true });
+app.get('/health', async (req, res) => {
+    res.json({ active: true });
 });
 
 // ROTA DE LISTAGEM (READ)
