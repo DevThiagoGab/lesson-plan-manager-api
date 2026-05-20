@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const axios = require('axios');
 const { Sequelize, DataTypes } = require('sequelize');
 const app = express();
 const cors = require('cors');
@@ -60,6 +61,10 @@ const planoAulaSchema = z.object({
     tags: z.array(z.string({
         invalid_type_error: "Cada tag precisa ser um texto"
     })).optional()
+});
+
+app.get('/', async (req, res) => {
+    res.json({ active: true });
 });
 
 app.get('/health', async (req, res) => {
@@ -174,6 +179,31 @@ app.delete('/planos/:id', async (req, res) => {
     }
 });
 
+// ROTA DE INTEGRACAO SMART ASSIST COM IA VIA n8n
+app.post('/api/smart-assist', async (req, res) => {
+    const { titulo, disciplina, ementa } = req.body;
+
+    const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook-test/d343e6ee-d485-40e8-849d-6552bedd3e10';
+
+    try {
+        // Envia os dados para o n8n de forma limpa e aguarda a resposta
+        const respostaN8n = await axios.post(N8N_WEBHOOK_URL, {
+            titulo,
+            disciplina,
+            ementa
+        });
+
+        // O axios já faz o parse do JSON automaticamente, basta repassar o.data pro front
+        res.json(respostaN8n.data);
+
+    } catch (erro) {
+        console.error("Erro ao conectar ou processar dados com o n8n:", erro.message);
+        res.status(500).json({ 
+            erro: "Não foi possível processar a recomendação com a IA.",
+            detalhes: erro.message 
+        });
+    }
+});
 
 sequelize.sync().then(() => {
     app.listen(port, () => {
